@@ -1,8 +1,8 @@
 package spike.lettuce
 
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
-import akka.stream.scaladsl.Source
+import akka.stream.{ActorMaterializer, ThrottleMode}
+import akka.stream.scaladsl.{Sink, Source}
 import io.lettuce.core.RedisClient
 import io.lettuce.core.pubsub.StatefulRedisPubSubConnection
 import io.lettuce.core.pubsub.api.async.RedisPubSubAsyncCommands
@@ -22,11 +22,15 @@ object Publisher extends App {
   val connection: StatefulRedisPubSubConnection[String, String] = client.connectPubSub
   val pubSubCommands: RedisPubSubAsyncCommands[String, String] = connection.async()
 
-  Source
-    //    .tick(1.second, 1.millis, ())
-    .repeat(())
+  Source(1 to 500000)
+    //        .tick(1.second, 1.millis, ())
+    //    .repeat(())
     .mapAsync(1) { x ⇒
-      FutureConverters.toScala(pubSubCommands.publish("channel", System.currentTimeMillis().toString))
-    }.runForeach(_ ⇒ ())
+    println(x)
+    FutureConverters.toScala(pubSubCommands.publish("channel", x.toString))
+  }
+    .throttle(100, 1.second, 100, ThrottleMode.shaping)
+    .runWith(Sink.ignore)
+
 
 }

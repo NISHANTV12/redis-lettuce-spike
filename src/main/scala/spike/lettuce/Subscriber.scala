@@ -4,7 +4,11 @@ import akka.actor.ActorSystem
 import akka.stream._
 import io.lettuce.core.RedisClient
 
-object Consumer extends App {
+import scala.collection.immutable
+import scala.concurrent.Await
+import scala.concurrent.duration.DurationDouble
+
+object Subscriber extends App {
 
   implicit val actorSystem: ActorSystem = ActorSystem()
   private val actorMaterializerSettings = ActorMaterializerSettings(actorSystem).withInputBuffer(1, 1)
@@ -14,9 +18,18 @@ object Consumer extends App {
 
 //  new LettuceConsumer(client).run.subscribe()
 
-//  new LettuceConsumer(client).slowConsumer
+//  new LettuceSubscriber(client).slowConsumer
 
-  new LettuceConsumer(client).throttle
+  val consumer: immutable.Seq[Long] = Await.result(new LettuceSubscriber(client).consumer, 30.seconds)
+
+  println(consumer == consumer.sorted)
+
+  println(consumer)
+  println(consumer.sorted)
+
+
+
+//  new LettuceConsumer(client).throttle
 }
 
 
